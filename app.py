@@ -1,40 +1,33 @@
 import streamlit as st
-from huggingface_hub import hf_hub_download
-from langchain_community.llms import LlamaCpp
+import os
+from langchain_groq import ChatGroq
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
 from langchain.chains import RetrievalQA
 
-st.title("🤖 My Free RAG Chatbot")
+st.title("🤖 My Fast Online RAG Chatbot")
 
-# ১. Hugging Face হাব থেকে অটো-ডাউনলোড
+# ১. সরাসরি Groq API Key সেট করা (আপনার কি-টি এখানে বসান)
+# আরও নিরাপদ করতে Streamlit Secrets ব্যবহার করা যায়, তবে শুরুতে সরাসরি বসালেও সমস্যা নেই
+os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+
+# ২. অনলাইন ক্লাউড LLM লোড করা (এটি চোখের পলকে সুপার ফাস্ট কাজ করবে)
 @st.cache_resource
 def load_llm():
-    model_path = hf_hub_download(
-        repo_id="unsloth/Llama-3.2-1B-Instruct-GGUF", 
-        filename="Llama-3.2-1B-Instruct-Q4_K_M.gguf"
-    )
-    # ফ্রি ক্লাউড CPU এর জন্য অপ্টিমাইজড কনফিগারেশন
-    llm = LlamaCpp(
-        model_path=model_path,
-        n_ctx=1024,      # কনটেক্সট উইন্ডো কিছুটা কমিয়ে RAM বাঁচানো হয়েছে
-        n_threads=1,     # ফ্রি কোর এর জন্য ১ রাখা নিরাপদ
-        n_batch=128,
-        verbose=False
-    )
-    return llm
+    # Llama 3.3 বা 3.1 এর এই মডেলটি গ্রকে সম্পূর্ণ ফ্রি এবং এর লিমিট অনেক বেশি
+    return ChatGroq(model="llama-3.1-8b-instant", temperature=0.2)
 
 llm = load_llm()
 
-# ২. ভেক্টর ডিবি এবং রিট্রিভার সেটআপ
+# ৩. ভেক্টর ডিবি এবং রিট্রিভার সেটআপ
 @st.cache_resource
 def setup_vector_db():
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     loader = TextLoader("knowledge_base.txt")
     documents = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=40)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     texts = text_splitter.split_documents(documents)
     
     vectorstore = Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db")
@@ -43,7 +36,7 @@ def setup_vector_db():
 retriever = setup_vector_db()
 qa_chain = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever)
 
-# ৩. চ্যাট ইন্টারফেস
+# ৪. চ্যাট ইন্টারফেস
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
