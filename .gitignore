@@ -1,0 +1,38 @@
+# Virtual Environments
+venv/
+env/
+.venv/
+
+# Streamlit Local Secrets & Configs
+.streamlit/secrets.toml
+.streamlit/config.toml
+
+# Environment Variables & Secrets
+.env
+.env.local
+*.env
+
+# Vector Databases & Local Embeddings Cache
+chroma_db/
+.chroma/
+*.db
+*.sqlite3
+
+# Python Cache & Compiled Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# IDE & Code Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Operating System Files
+.DS_Store
+Thumbs.db

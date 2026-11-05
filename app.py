@@ -4,7 +4,7 @@ from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
@@ -25,25 +25,31 @@ def load_llm():
 
 llm = load_llm()
 
-# ৩. ভেক্টর ডিবি এবং রিট্রিভার সেটআপ
+# ৩. ভেক্টর ডিবি এবং রিট্রিভার সেটআপ (ফোল্ডার থেকে সমস্ত PDF পড়ার জন্য)
 @st.cache_resource
 def setup_vector_db():
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     
-    pdf_filename = "59Online-Application-Instruction-Spring-2027-ENG.pdf"
+    # PDF ফাইলগুলো রাখা ফোল্ডারের নাম (যেমন: 'docs' বা 'pdfs')
+    pdf_folder_path = "docs"
     
-    if not os.path.exists(pdf_filename):
-        st.error(f"❌ '{pdf_filename}' file not found in the GitHub repository!")
+    if not os.path.exists(pdf_folder_path):
+        st.error(f"❌ Folder '{pdf_folder_path}' not found in the repository!")
         st.stop()
         
-    loader = PyPDFLoader(pdf_filename)
+    # PyPDFDirectoryLoader দিয়ে ফোল্ডারের ভেতরের সব PDF একসাথে লোড হবে
+    loader = PyPDFDirectoryLoader(pdf_folder_path)
     documents = loader.load()
+    
+    if not documents:
+        st.error(f"⚠️ No PDF files found inside '{pdf_folder_path}' folder!")
+        st.stop()
     
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     texts = text_splitter.split_documents(documents)
     
     vectorstore = Chroma.from_documents(texts, embeddings)
-    return vectorstore.as_retriever(search_kwargs={"k": 3})
+    return vectorstore.as_retriever(search_kwargs={"k": 5})
 
 retriever = setup_vector_db()
 
@@ -64,7 +70,6 @@ prompt_template = ChatPromptTemplate.from_messages([
     ("human", "{question}"),
 ])
 
-# আধুনিক LCEL RAG Chain (কোনো langchain.chains লাগবে না)
 rag_chain = (
     {"context": retriever | format_docs, "question": RunnablePassthrough()}
     | prompt_template
