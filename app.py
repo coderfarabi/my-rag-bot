@@ -5,18 +5,21 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
-from langchain.chains import RetrievalQA
+# ল্যাংচেইনের নতুন ভার্সন অনুযায়ী সংশোধিত ইম্পোর্ট
+from langchain.chains.retrieval_qa.base import RetrievalQA
 
 st.title("🤖 My Fast Online RAG Chatbot")
 
-# ১. সরাসরি Groq API Key সেট করা (আপনার কি-টি এখানে বসান)
-# আরও নিরাপদ করতে Streamlit Secrets ব্যবহার করা যায়, তবে শুরুতে সরাসরি বসালেও সমস্যা নেই
-os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+# ১. স্ট্রিমলিট সিক্রেটস থেকে API Key লোড করা (সবচেয়ে নিরাপদ)
+if "GROQ_API_KEY" in st.secrets:
+    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+else:
+    st.error("Please add your GROQ_API_KEY in Streamlit Secrets!")
+    st.stop()
 
-# ২. অনলাইন ক্লাউড LLM লোড করা (এটি চোখের পলকে সুপার ফাস্ট কাজ করবে)
+# ২. অনলাইন ক্লাউড LLM লোড করা
 @st.cache_resource
 def load_llm():
-    # Llama 3.3 বা 3.1 এর এই মডেলটি গ্রকে সম্পূর্ণ ফ্রি এবং এর লিমিট অনেক বেশি
     return ChatGroq(model="llama-3.1-8b-instant", temperature=0.2)
 
 llm = load_llm()
