@@ -21,7 +21,7 @@ else:
 # ২. LLM লোড করা
 @st.cache_resource
 def load_llm():
-    return ChatGroq(model="llama-3.1-8b-instant", temperature=0.2)
+    return ChatGroq(model="llama-3.1-8b-versatile", temperature=0.2)
 
 llm = load_llm()
 
